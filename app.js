@@ -1,30 +1,95 @@
-var app = angular.module('flapperNews', []);
+var app = angular.module('flapperNews', ['ui.router']);
+
+
+///////////router/////////////
+
+app.config(['$stateProvider', '$urlRouterProvider',
+	function($stateProvider, $urlRouterProvider) {
+		$stateProvider
+	    .state('home', {
+	      url: '/home',
+	      templateUrl: '/home.html',
+	      controller: 'MainCtrl'
+	    })
+
+	   	.state('posts', {
+	   		url: '/posts/{id}',
+	   		templateUrl: '/posts.html',
+	   		controller: 'PostsCtrl'
+	   	});
+
+	  $urlRouterProvider.otherwise('home');
+	}
+]);
+
+
+////////// Main controller//////////
 
 app.controller('MainCtrl', MainCtrl)
 
-MainCtrl.$inject = ['$scope']
+MainCtrl.$inject = ['$scope', 'posts']
 
-function MainCtrl($scope){
+function MainCtrl($scope, posts){
   $scope.addPost = addPost;
-  $scope.upvotePost = upvotePost;
+  $scope.incrementUpvotes = incrementUpvotes;
 
   $scope.test = 'Hello world!';
   
-  $scope.posts = [
-	  {title: 'post 1', upvotes: 5},
-	  {title: 'post 2', upvotes: 2},
-	  {title: 'post 3', upvotes: 15},
-	  {title: 'post 4', upvotes: 9},
-	  {title: 'post 5', upvotes: 4}
-	];
+  $scope.posts = posts.posts;  //theoretical db in memory
 
 	function addPost() {
 		if(!$scope.title || $scope.title === '') {return alert("Please enter a title.") ;}
-		$scope.posts.push({title: $scope.title, upvotes: 0, url: $scope.url})
+
+		$scope.posts.push({
+			title: $scope.title, 
+			upvotes: 0, 
+			url: $scope.url,
+			comments: [
+				{author: 'Joe', body: 'Cool post!', upvotes: 0},
+    		{author: 'Bob', body: 'Great idea but everything is wrong!', upvotes: 0}
+			]
+		})
 		$scope.title = ''
+		$scope.url = ''
 	};
 
-	function upvotePost(post) {
+	function incrementUpvotes(post) {
 		post.upvotes += 1;
 	}
 };
+
+/////////Posts Controller///////////
+
+app.controller('PostsCtrl', PostsCtrl)
+
+PostsCtrl.$inject = ['$scope', '$stateParams', 'posts']
+
+function PostsCtrl($scope, $stateParams, posts) {
+	$scope.post = posts.posts[$stateParams.id]
+	$scope.incrementUpvotes = incrementUpvotes;
+	$scope.addComment = addComment;
+
+	function incrementUpvotes(comment) {
+		comment.upvotes += 1;
+	}
+
+	function addComment() {
+		$scope.post.comments.push({
+			author: 'user',
+			body: $scope.body,
+			upvotes: 0
+		})
+		$scope.body = '';
+	}
+}
+
+////////factory////////////
+
+app.factory('posts', [function(){
+	var o = {
+		posts: []
+	}
+	return o;
+}]);
+
+
